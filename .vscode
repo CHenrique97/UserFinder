@@ -1,0 +1,7 @@
+{
+    "go.lintOnSave": true,
+    "go.lintFlags": [
+        "-set_exit_status",
+        "./..."
+    ]
+}
