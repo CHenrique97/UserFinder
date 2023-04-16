@@ -27,6 +27,6 @@ func main() {
 	r.GET("/migrate", controllers.Migrate)
 	r.GET("/getUser", controllers.GetUser)
 	r.POST("/postUser", controllers.PostCreate)
-	r.Run(os.Getenv("port"))
+	r.Run(":" + os.Getenv("port"))
 	fmt.Println("Hello World")
 }

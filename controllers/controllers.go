@@ -1,12 +1,14 @@
 package controllers
 
 import (
+	"fmt"
 	"log"
 
 	connectDB "github.com/UserFinder/connect"
 	"github.com/UserFinder/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 //Check parses the result of the query
@@ -28,16 +30,27 @@ func PostCreate(c *gin.Context) {
 	var body models.User
 	c.BindJSON(&body)
 
+	// Hash the password using bcrypt
+	uuid := uuid.New().String()
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(body.Password+uuid), bcrypt.DefaultCost)
+	if err != nil {
+		// handle error
+		c.JSON(400, gin.H{
+			"message": "User could not be verified",
+		})
+		return
+	}
+
 	post := models.User{
-		ID:       uuid.New().String(),
+		ID:       uuid,
 		Name:     body.Name,
 		Email:    body.Email,
-		Password: body.Password,
+		Password: string(hashedPassword), // Store the hashed password in the database
 	}
 
 	var check Check
 
-	err := connectDB.DB.Raw("SELECT EXISTS(SELECT 1 FROM `users` WHERE `email` = ?) as result", body.Email).Scan(&check).Error
+	err = connectDB.DB.Raw("SELECT EXISTS(SELECT 1 FROM `users` WHERE `email` = ?) as result", body.Email).Scan(&check).Error
 
 	if err != nil {
 		// handle error
@@ -53,10 +66,10 @@ func PostCreate(c *gin.Context) {
 		})
 		return
 	}
+
 	// use the `result` variable
 	result := connectDB.DB.Create(&post)
 	if result.Error != nil {
-
 		c.JSON(400, gin.H{
 			"message": "User could not be created",
 		})
@@ -67,15 +80,17 @@ func PostCreate(c *gin.Context) {
 	})
 }
 
-//GetUser checks if user exists in database
 func GetUser(c *gin.Context) {
 	var body models.User
 	c.BindJSON(&body)
-	user, err := authenticateUser(body.Email, body.Password)
+	//print json from c.BindJSON(&body)
 
+	// Authenticate the user by comparing the hashed password
+	user, err := authenticateUser(body.Email, body.Password)
+	fmt.Println(err)
 	if err != nil {
 		c.JSON(401, gin.H{
-			"message": "Invalid email or password",
+			"message": err.Error(),
 		})
 		return
 	}
@@ -84,16 +99,23 @@ func GetUser(c *gin.Context) {
 		"message": "Authentication successful",
 		"user":    user.ID,
 	})
-	c.JSON(200, gin.H{
-		"message": "pong",
-	})
 }
+
 func authenticateUser(email string, password string) (models.User, error) {
 	var user models.User
-	result := connectDB.DB.Where("email = ? AND password = ?", email, password).First(&user)
+	result := connectDB.DB.Where("email = ?", email).First(&user)
+	fmt.Println(password)
 	if result.Error != nil {
 		return user, result.Error
 	}
+
+	// Compare the hashed password with the input password
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password+user.ID)); err != nil {
+
+		return user, err
+	}
+
 	return user, nil
 }
 
