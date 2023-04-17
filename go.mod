@@ -7,6 +7,7 @@ require github.com/gin-gonic/gin v1.9.0
 require (
 	cloud.google.com/go/compute/metadata v0.2.0 // indirect
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
+	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect

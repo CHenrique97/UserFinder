@@ -15,7 +15,7 @@ var (
 		ClientSecret: "YOUR_GOOGLE_CLIENT_SECRET",
 		Endpoint:     google.Endpoint,
 		RedirectURL:  "http://localhost:8080/auth/google/callback",
-		Scopes: []string{"https://www.googleapis.com/auth/userinfo.email",z
+		Scopes: []string{"https://www.googleapis.com/auth/userinfo.email",
 			"https://www.googleapis.com/auth/userinfo.profile"},
 	}
 )

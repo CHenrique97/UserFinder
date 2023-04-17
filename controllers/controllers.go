@@ -5,6 +5,7 @@ import (
 	"log"
 
 	connectDB "github.com/UserFinder/connect"
+	jwtbuilder "github.com/UserFinder/helpers"
 	"github.com/UserFinder/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -75,11 +76,16 @@ func PostCreate(c *gin.Context) {
 		})
 		return
 	}
+	token, _ := jwtbuilder.CreateJWTToken(post.ID)
+
 	c.JSON(200, gin.H{
-		"message": &post,
+
+		"message": token,
 	})
+
 }
 
+// GetUser gets a user
 func GetUser(c *gin.Context) {
 	var body models.User
 	c.BindJSON(&body)
@@ -87,7 +93,6 @@ func GetUser(c *gin.Context) {
 
 	// Authenticate the user by comparing the hashed password
 	user, err := authenticateUser(body.Email, body.Password)
-	fmt.Println(err)
 	if err != nil {
 		c.JSON(401, gin.H{
 			"message": err.Error(),
@@ -95,10 +100,15 @@ func GetUser(c *gin.Context) {
 		return
 	}
 
+	token, _ := jwtbuilder.CreateJWTToken(user.ID)
+
+	fmt.Println(token)
+
 	c.JSON(200, gin.H{
-		"message": "Authentication successful",
-		"user":    user.ID,
+
+		"message": token,
 	})
+
 }
 
 func authenticateUser(email string, password string) (models.User, error) {
