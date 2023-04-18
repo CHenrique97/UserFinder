@@ -17,7 +17,6 @@ var DB *gorm.DB
 
 func InitConnector() {
 	// Replace the values with your PlanetScaleDB credentials
-	log.Println(os.Getenv("DSN"))
 	var err error
 	DB, err = gorm.Open("mysql", os.Getenv("DSN"))
 	if err != nil {

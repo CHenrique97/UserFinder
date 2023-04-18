@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -116,7 +115,6 @@ func GetUser(c *gin.Context) {
 func authenticateUser(email string, password string) (models.User, error) {
 	var user models.User
 	result := connectDB.DB.Where("email = ?", email).First(&user)
-	fmt.Println(password)
 	if result.Error != nil {
 		return user, result.Error
 	}

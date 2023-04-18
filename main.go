@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	connectDB "github.com/UserFinder/connect"
@@ -30,5 +29,5 @@ func main() {
 	r.GET("/validate", middleware.RequireAuth, controllers.Validate)
 	r.POST("/postUser", controllers.PostCreate)
 	r.Run(":" + os.Getenv("port"))
-	fmt.Println("Hello World")
+
 }

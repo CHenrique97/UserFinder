@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 
 	connectDB "github.com/UserFinder/connect"
@@ -20,7 +19,6 @@ func RequireAuth(c *gin.Context) {
 	}
 	token, err = jwtbuilder.VerifyJWTToken(token)
 	if err != nil {
-		fmt.Println(err)
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
