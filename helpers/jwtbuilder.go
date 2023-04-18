@@ -7,6 +7,14 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+type TicketExpiredError struct {
+	message string
+}
+
+func (e *TicketExpiredError) Error() string {
+	return e.message
+}
+
 //CreateJWTToken creates a new token
 func CreateJWTToken(userID string) (string, error) {
 	// Set the claims
@@ -42,6 +50,10 @@ func VerifyJWTToken(tokenString string) (string, error) {
 
 	// Validate the token and return the custom claims
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		if float64(time.Now().Unix()) > claims["exp"].(float64) {
+			return "", &TicketExpiredError{message: "Ticket expired"}
+
+		}
 		userID := claims["user_id"].(string)
 		return userID, nil
 	}

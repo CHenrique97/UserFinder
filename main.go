@@ -7,6 +7,7 @@ import (
 	connectDB "github.com/UserFinder/connect"
 	"github.com/UserFinder/controllers"
 	"github.com/UserFinder/initializers"
+	"github.com/UserFinder/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -26,6 +27,7 @@ func main() {
 
 	r.GET("/migrate", controllers.Migrate)
 	r.GET("/getUser", controllers.GetUser)
+	r.GET("/validate", middleware.RequireAuth, controllers.Validate)
 	r.POST("/postUser", controllers.PostCreate)
 	r.Run(":" + os.Getenv("port"))
 	fmt.Println("Hello World")

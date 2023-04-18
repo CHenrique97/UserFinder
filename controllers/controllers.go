@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"log"
+	"net/http"
 
 	connectDB "github.com/UserFinder/connect"
 	jwtbuilder "github.com/UserFinder/helpers"
@@ -77,10 +78,11 @@ func PostCreate(c *gin.Context) {
 		return
 	}
 	token, _ := jwtbuilder.CreateJWTToken(post.ID)
-
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("Authorization", token, 3600*24*30, "/", "localhost", false, true)
 	c.JSON(200, gin.H{
 
-		"message": token,
+		"message": "Token sent",
 	})
 
 }
@@ -102,11 +104,11 @@ func GetUser(c *gin.Context) {
 
 	token, _ := jwtbuilder.CreateJWTToken(user.ID)
 
-	fmt.Println(token)
-
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("Authorization", token, (3600 * 24 * 30), "/", "localhost", false, true)
 	c.JSON(200, gin.H{
 
-		"message": token,
+		"message": "Token sent",
 	})
 
 }
@@ -129,6 +131,20 @@ func authenticateUser(email string, password string) (models.User, error) {
 	return user, nil
 }
 
+// Validate validates the user
+func Validate(c *gin.Context) {
+	user, exists := c.Get("user")
+
+	if !exists {
+		c.JSON(401, gin.H{
+			"message": "User could not be verified",
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"message": user})
+}
 func postDelete(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"message": "pong",
