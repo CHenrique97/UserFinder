@@ -31,7 +31,7 @@ func handleGoogleLogin(c *gin.Context) {
 
 func handleGoogleCallback(c *gin.Context) {
 	code := c.Query("code")
-	err := googleOauthConfig.Exchange(c, code)
+	err, _ := googleOauthConfig.Exchange(c, code)
 	if err != nil {
 		c.String(http.StatusBadRequest, "Failed to exchange token")
 		return

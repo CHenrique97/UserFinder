@@ -23,6 +23,7 @@ func main() {
 
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"http://localhost:3000"} // Replace with your client's URL
+	config.AllowCredentials = true
 	r.Use(cors.New(config))
 	r.GET("/", func(c *gin.Context) {
 		c.String(200, "Hello World")
@@ -32,6 +33,6 @@ func main() {
 	r.POST("/getUser", controllers.GetUser)
 	r.GET("/validate", middleware.RequireAuth, controllers.Validate)
 	r.POST("/postUser", controllers.PostCreate)
-	r.Run(":" + os.Getenv("port"))
+	r.Run(":" + os.Getenv("PORT"))
 
 }
