@@ -1,38 +1,95 @@
 package main
 
 import (
-	"os"
+	"context"
 
 	connectDB "github.com/UserFinder/connect"
-	"github.com/UserFinder/controllers"
-	"github.com/UserFinder/initializers"
-	"github.com/UserFinder/middleware"
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
+	"github.com/UserFinder/models"
+	pb "github.com/UserFinder/models"
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-// Main function
-func init() {
-	initializers.LoadEnv()
-	connectDB.InitConnector()
+type server struct{}
+
+func (s *server) CreateUser(ctx context.Context, req *pb.UserRequest) (*pb.UserResponse, error) {
+	// Hash the password using bcrypt
+	uuid := uuid.New().String()
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password+uuid), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Error hashing password")
+	}
+
+	post := models.User{
+		ID:       uuid,
+		Name:     req.Name,
+		Email:    req.Email,
+		Password: string(hashedPassword), // Store the hashed password in the database
+	}
+
+	var check struct {
+		Result bool
+	}
+
+	err = connectDB.DB.Raw("SELECT EXISTS(SELECT 1 FROM `users` WHERE `email` = ?) as result", req.Email).Scan(&check).Error
+
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Error checking email")
+	}
+
+	if check.Result {
+		return nil, status.Errorf(codes.InvalidArgument, "User already exists")
+	}
+
+	// use the `result` variable
+	result := connectDB.DB.Create(&post)
+	if result.Error != nil {
+		return nil, status.Errorf(codes.Internal, "Error creating user")
+	}
+
+
+	return &pb.UserResponse{
+		Id:      post.ID,
+		Name:     req.Name,
+		Email:    req.Email,
+	}, nil
 }
 
-func main() {
+func (s *server) GetUser(ctx context.Context, req *pb.UserRequest) (*pb.UserResponse, error) {
+	// Get the user ID from the request
+	email := req.Email
+	password := req.Password
 
-	r := gin.Default()
+	user, err := authenticateUser(email, password)
 
-	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"http://localhost:3000"} // Replace with your client's URL
-	config.AllowCredentials = true
-	r.Use(cors.New(config))
-	r.GET("/", func(c *gin.Context) {
-		c.String(200, "Hello World")
-	})
+    if err != nil {
+		return nil, status.Errorf(codes.Internal, "Error authenticating user")
+	}
 
-	r.GET("/migrate", controllers.Migrate)
-	r.POST("/getUser", controllers.GetUser)
-	r.GET("/validate", middleware.RequireAuth, controllers.Validate)
-	r.POST("/postUser", controllers.PostCreate)
-	r.Run(":" + os.Getenv("PORT"))
+	// Create and return a user response
+	response :=  &pb.UserResponse{
+		Id:    user.ID,
+		Email:  user.Email,
+		Name:  user.Name,
+	}
+	return response, nil
+}
 
+func authenticateUser(email string, password string) (models.User, error) {
+	var user models.User
+	result := connectDB.DB.Where("email = ?", email).First(&user)
+	if result.Error != nil {
+		return user, result.Error
+	}
+
+	// Compare the hashed password with the input password
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password+user.ID)); err != nil {
+
+		return user, err
+	}
+
+	return user, nil
 }
