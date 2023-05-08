@@ -2,17 +2,23 @@ package main
 
 import (
 	"context"
+	"log"
+	"net"
 
 	connectDB "github.com/UserFinder/connect"
+	"github.com/UserFinder/initializers"
 	"github.com/UserFinder/models"
 	pb "github.com/UserFinder/models"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-type server struct{}
+type server struct {
+	pb.UnimplementedUserServiceServer
+}
 
 func (s *server) CreateUser(ctx context.Context, req *pb.UserRequest) (*pb.UserResponse, error) {
 	// Hash the password using bcrypt
@@ -49,11 +55,10 @@ func (s *server) CreateUser(ctx context.Context, req *pb.UserRequest) (*pb.UserR
 		return nil, status.Errorf(codes.Internal, "Error creating user")
 	}
 
-
 	return &pb.UserResponse{
-		Id:      post.ID,
-		Name:     req.Name,
-		Email:    req.Email,
+		Id:    post.ID,
+		Name:  req.Name,
+		Email: req.Email,
 	}, nil
 }
 
@@ -64,14 +69,14 @@ func (s *server) GetUser(ctx context.Context, req *pb.UserRequest) (*pb.UserResp
 
 	user, err := authenticateUser(email, password)
 
-    if err != nil {
+	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Error authenticating user")
 	}
 
 	// Create and return a user response
-	response :=  &pb.UserResponse{
+	response := &pb.UserResponse{
 		Id:    user.ID,
-		Email:  user.Email,
+		Email: user.Email,
 		Name:  user.Name,
 	}
 	return response, nil
@@ -92,4 +97,27 @@ func authenticateUser(email string, password string) (models.User, error) {
 	}
 
 	return user, nil
+}
+
+func init() {
+	initializers.LoadEnv()
+}
+func main() {
+	// Start a gRPC server
+	lis, err := net.Listen("tcp", ":5001")
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	s := grpc.NewServer()
+	server := &server{}
+	pb.RegisterUserServiceServer(s,server)
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
+
+	// Connect to the database
+
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
 }
