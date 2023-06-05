@@ -101,6 +101,7 @@ func authenticateUser(email string, password string) (models.User, error) {
 
 func init() {
 	initializers.LoadEnv()
+	connectDB.InitConnector()
 }
 func main() {
 	// Start a gRPC server
